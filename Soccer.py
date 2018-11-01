@@ -139,39 +139,35 @@ class Tournament:
                         str(self.info[team][5]) + "gd (" +
                         str(self.info[team][6]) + "-" +
                         str(self.info[team][7]) + ")")
-            ans_to_write += (team_res+'\n')
             print(team_res)
+            ans_to_write += (team_res+'\n')
 
         if output_file:  # if write_file is required
             output_file.write(ans_to_write)
 
 
 def main():
-    # parse all the txt file input line by line
+    # parse input file
     parser = argparse.ArgumentParser()
     parser.add_argument('filename')
     args = parser.parse_args()
-    arg_list = []
 
-    with open(args.filename, encoding='utf-16') as file:
-        for line in file:
-            arg_list.append(line[:-1])
-
+    # prepare output file
     output = open("game_res.txt", "w+")  # create an txt file
 
-    this_round = 1  # indicate the start index of a tournament
+    with open(args.filename, encoding='utf-16') as file:
+        num_tournament = int(file.readline())
+        for _ in range(num_tournament):
+            # read input
+            tournament_name = file.readline()[:-1]
+            team_num = int(file.readline())
+            team_names = [file.readline()[:-1] for __ in range(team_num)]
+            game_num = int(file.readline())
+            games_text = [file.readline()[:-1] for __ in range(game_num)]
 
-    for tournament_number in range(int(arg_list[0])):
-        # parse data from the arg_list
-        tournament_name = arg_list[this_round]
-        T = int(arg_list[this_round+1])
-        team_names = arg_list[this_round+2:this_round+T+2]
-        G = int(arg_list[this_round+T+2])
-        games_text = arg_list[this_round+T+3:this_round+T+G+3]
-        this_round += T + G + 3  # T+G+3 is number of data in each tournament
-
-        tournament = Tournament(tournament_name, team_names, games_text)
-        tournament.print_result(output_file=output)
+            # run the program
+            tournament = Tournament(tournament_name, team_names, games_text)
+            tournament.print_result(output_file=output)
 
     output.close()
 

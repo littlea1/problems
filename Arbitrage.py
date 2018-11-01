@@ -9,7 +9,6 @@ want to arbitrage with transactions length less than dimension of currencies.
 
 
 import argparse
-import ast
 import numpy as np
 from itertools import combinations
 from itertools import permutations
@@ -74,57 +73,61 @@ def detect_arbitrage(m, N, memo={}):
             cycle_result *= m[t[-1]][t[0]]  # finish the transaction
             if cycle_result > 1.01:  # if arbitrage exists, add to arb_chains
                 cycle_t = list(t) + [t[0]]
-                cycle_t = [item + 1 for item in cycle_t]
+                cycle_t = [item + 1 for item in cycle_t]  # index start from 0
                 arb_chains.append(cycle_t)
     return arb_chains
 
 
+def print_arbchains(arb_chains, output_file=None):
+    """
+    print all chains producing arbitrage and write
+    :param arb_chains: a list of lists containing name of currency
+    :param output_file: a file used to contain output, default is print-only
+    """
+    ans_to_write = ""  # record everything need to be written into the file
+
+    if arb_chains:  # if there exists arbitrage
+        for arb_chain in arb_chains:
+            arb_chain_str = ""
+            for ccy in arb_chain:  # format the output
+                arb_chain_str += (str(ccy) + "-")
+            ans_to_write += arb_chain_str[:-1] + "\n"
+    else:  # if no arbitrage exists
+        ans_to_write += "no arbitrage sequence exists\n"
+
+    print(ans_to_write)
+    ans_to_write += "\n"
+
+    if output_file:
+        # write into a text file
+        output_file.write(ans_to_write)
+
+
 def main():
-    # parse input using argparse into a list and convert strings to numerals 
+    # parse input file
     parser = argparse.ArgumentParser()
     parser.add_argument('filename')
     args = parser.parse_args()
-    arg_list = []
-    with open(args.filename, encoding='utf-16') as file:
-        for line in file:
-            for word in line.split():
-                arg_list.append(ast.literal_eval(word))
 
-    # create a text file
+    # prepare output file
     output = open("arb_chains.txt", "w+")
 
-    i = 0  # indicate the start of a table of exchange rates
-    while i < len(arg_list):
-        N = arg_list[i]  # first value is the dimension
+    with open(args.filename, encoding='utf-16') as file:
+        while True:
+            try:
+                # read input
+                dim = int(file.readline())
+                input_matrix = [[float(num) for num in file.readline().split()]
+                                            for _ in range(dim)]
 
-        # i + 1 + j * (N-1) is the start of each row with dimension N
-        # i + 1 + (j+1) * (N-1) is the start of next row with dimension N
-        input_matrix = []
-        for j in range(N):
-            start = i + 1 + j * (N - 1)
-            end = i + 1 + (j + 1) * (N - 1)
-            row = arg_list[start:end]
-            input_matrix.append(row)
-        i += (1 + N * (N-1))  # read 1 (dimension) and N*(N-1) float numbers
+                # run the program
+                m = transform_input(input_matrix, dim)
+                arb_chains = detect_arbitrage(m, dim)
+                print_arbchains(arb_chains, output)
 
-        m = transform_input(input_matrix, N)
-        arb_chains = detect_arbitrage(m, N)
-
-        ans_to_write = ""  # record everything need to be written into the file
-        if arb_chains:  # if there exists arbitrage
-            for arb_chain in arb_chains:
-                arb_chain_str = ""
-                for ccy in arb_chain:  # format the output
-                    arb_chain_str += (str(ccy) + "-")
-                ans_to_write += arb_chain_str[:-1] + "\n"
-                print(arb_chain_str[:-1])
-        else:  # if no arbitrage exists
-            print("no arbitrage sequence exists")
-            ans_to_write += "no arbitrage sequence exists\n"
-        ans_to_write += "\n"
-
-        # write into a text file
-        output.write(ans_to_write)
+            except ValueError:
+                # end of the file
+                break
 
     output.close()
 
